@@ -1,9 +1,5 @@
 #! /usr/bin/env bash
 
-# !!! We need to find the dev container that is mounted in the current
-# !!! directory and just stop and rm that one
-#! /usr/bin/env bash
-
 # This script attempts to detect the container that has the current working directory
 # bound as a bind mount, as that's the one we are currently developing in.
 
@@ -21,7 +17,10 @@ else
   DOCKER_CONTAINER_ID_LIST=$(docker ps -q -f "name=$NAME_FILTER")
 fi
 
-if [ -z "$DOCKER_CONTAINER_ID_LIST" ]; then
+# Check if we have any containers at all, and if not, exit
+# !!! This check feels so flimsy, as docker ps will always print something even if there
+# !!! are no containers!
+if [[ -z "$DOCKER_CONTAINER_ID_LIST" || "$DOCKER_CONTAINER_ID_LIST" == "" ]]; then
   exit 0
 fi
 
@@ -33,10 +32,10 @@ docker inspect $DOCKER_CONTAINER_ID_LIST | jq -c '.[]' | while read -r CONTAINER
   # Loop through the container mounts and see if we have a bind mount with our
   # current directory.
   jq -r '.Mounts' <<< $CONTAINER_OBJECT | jq -c '.[]' | while read -r MOUNT_OBJECT; do
-    DESTINATION_DIRECTORY=$(jq -r '.Source' <<< $MOUNT_OBJECT)
+    SOURCE_DIRECTORY=$(jq -r '.Source' <<< $MOUNT_OBJECT)
     # See if the destination directory is the same as our current working directory,
     # and if so, we have our container ID!
-    if [ "$CURRENT_DIRECTORY" == "$DESTINATION_DIRECTORY" ]; then
+    if [ "$CURRENT_DIRECTORY" == "$SOURCE_DIRECTORY" ]; then
       echo -n $CONTAINER_ID
       break
     fi

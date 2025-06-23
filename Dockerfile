@@ -9,11 +9,13 @@ RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 # Copy over our flake.nix file, which we will use to create a devshell
 COPY flake.nix /tmp/
 
+RUN git config --global user.name "Andrew O'Mahony"
+RUN git config --global user.email "andrewsomahony@gmail.com"
+RUN git config --global core.editor nvim
+
 # Set our working directory
 WORKDIR /workspace
 
-# Generate an SSH key pair (no passphrase, default location)
-RUN ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 
 # Run our Nix develop shell, which serves as the entrypoint
 ENTRYPOINT [ "sleep", "infinity" ]
