@@ -1,14 +1,14 @@
 {
-  inputs.nixpkgs-linux = {
+  inputs.nixpkgs-unstable = {
     url = "github:NixOS/nixpkgs/nixos-unstable"; # Example branch for Linux
   };
-  inputs.nixpkgs-darwin = {
+  inputs.nixpkgs-stable = {
     url = "github:NixOS/nixpkgs/nixos-24.11"; # Example branch for macOS
   };
   inputs.utils.url = "github:numtide/flake-utils";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
 
-  outputs = { self, nixpkgs-linux, nixpkgs-darwin, utils, pyproject-nix }:
+  outputs = { self, nixpkgs-unstable, nixpkgs-stable, utils, pyproject-nix }:
     let
       forAllSystems = utils.lib.eachDefaultSystem;
       # Get our Dev Shell
@@ -18,10 +18,12 @@
     in
       forAllSystems (system: 
         let 
-          linuxPackages = (import nixpkgs-linux { inherit system; });
-          darwinPackages = (import nixpkgs-darwin { inherit system; });
-          isDarwin = darwinPackages.stdenv.isDarwin;
-          pkgs = if isDarwin then darwinPackages else linuxPackages;
+          unstablePackages = (import nixpkgs-unstable { inherit system; });
+          stablePackages = (import nixpkgs-stable { inherit system; });
+          # We can't call isDarwin until we have an stdenv, which is when we are here,
+          # so we set this boolean here
+          stablePackagesRequired = false;
+          pkgs = if stablePackagesRequired then stablePackages else unstablePackages;
           python = pkgs.python3;
 
           aom_fish = 
@@ -30,8 +32,8 @@
               src = pkgs.fetchFromGitHub {
                 owner = "andrewsomahony";
                 repo = "fish_config";
-                rev = "43a146de347becf6c219c1e10c116d088b9d1e03";
-                hash = "sha256-T05/429iDvicScLu70PDFZT5Q26v5OyrexlflhF0WVY=";
+                rev = "b4c0c99ad0e42c5b8543b4bd0f370b6a3113ca04";
+                hash = "sha256-5eWZpA3v/vUEdNfVqDNeEQ12UEZIRj9Fg7oTTgcMD3M=";
               };
               buildPhase = ''
               '';
@@ -109,9 +111,6 @@
               exec $DEV_SHELL
             '';
             packages = [
-              # fish
-                # Neovim for development
-                neovim 
                 # Ripgrep for Neovim searching
                 ripgrep
                 # Nodejs for various LSP needs
@@ -161,7 +160,7 @@
                 # this is because on Darwin, due to another build error, we cannot use
                 # nixos-unstable, so we need to use an older repo.  However, the version of Fish
                 # in this repo isn't very good, so we just use our local OSX fish shell.
-            ] ++ lib.optionals (!isDarwin) [ fish ];
+            ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ];
 
           };
 

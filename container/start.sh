@@ -14,8 +14,8 @@ SHELL=fish
 
 EXISTING_CONTAINER_ID=$($SCRIPT_DIRECTORY/detect.sh)
 if [ -n "$EXISTING_CONTAINER_ID" ]; then
-  echo "Container $EXISTING_CONTAINER_ID already is bound to this directory"
-  exit 1
+  docker exec -it $EXISTING_CONTAINER_ID $NIX_SHELL -c "nix develop --impure /tmp/"
+  exit 0
 fi
 
 # Build our Docker image
