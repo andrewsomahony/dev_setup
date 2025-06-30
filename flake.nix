@@ -133,6 +133,8 @@
                 rustc
                 # Rust package manager
                 cargo
+                # Next generation Rust unit tester
+                cargo-nextest
                 # Rust LSP
                 rust-analyzer
                 # Rust sources
