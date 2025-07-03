@@ -7,7 +7,8 @@ RUN nix-channel --update
 RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 
 # Copy over our flake.nix file, which we will use to create a devshell
-COPY flake.nix /tmp/
+RUN mkdir /tmp/flake
+COPY flake.nix /tmp/flake
 
 RUN git config --global user.name "Andrew O'Mahony"
 RUN git config --global user.email "andrewsomahony@gmail.com"

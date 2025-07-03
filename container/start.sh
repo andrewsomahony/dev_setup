@@ -9,12 +9,13 @@ WORKING_DIRECTORY=$(pwd)
 IMAGE_TAG="aom_dev_container"
 NIX_SHELL=/bin/sh
 SHELL=fish
+FLAKE_DIRECTORY=/tmp/flake
 
 # See if we have a container running in this directory already, and error out if so
 
 EXISTING_CONTAINER_ID=$($SCRIPT_DIRECTORY/detect.sh)
 if [ -n "$EXISTING_CONTAINER_ID" ]; then
-  docker exec -it $EXISTING_CONTAINER_ID $NIX_SHELL -c "nix develop --impure /tmp/"
+  docker exec -it $EXISTING_CONTAINER_ID $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY"
   exit 0
 fi
 
@@ -40,4 +41,4 @@ docker run -d \
           $IMAGE_TAG
 
 # Execute our shell
-docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure /tmp/"
+docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY"

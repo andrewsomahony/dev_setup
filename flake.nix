@@ -5,10 +5,13 @@
   inputs.nixpkgs-stable = {
     url = "github:NixOS/nixpkgs/nixos-24.11"; # Example branch for macOS
   };
+  inputs.nixpkgs = {
+    url = "github:NixOS/nixpkgs";
+  };
   inputs.utils.url = "github:numtide/flake-utils";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
 
-  outputs = { self, nixpkgs-unstable, nixpkgs-stable, utils, pyproject-nix }:
+  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils, pyproject-nix }:
     let
       forAllSystems = utils.lib.eachDefaultSystem;
       # Get our Dev Shell
@@ -20,6 +23,11 @@
         let 
           unstablePackages = (import nixpkgs-unstable { inherit system; });
           stablePackages = (import nixpkgs-stable { inherit system; });
+          mainPackages = (import nixpkgs { 
+            inherit system; 
+            config.allowUnfree = true;
+            sandbox = false;
+          });
           # We can't call isDarwin until we have an stdenv, which is when we are here,
           # so we set this boolean here
           stablePackagesRequired = false;
@@ -158,6 +166,7 @@
                 llvmPackages_latest.lld
                 # Nom for building, with a much nicer output
                 nix-output-monitor
+                mainPackages.claude-code
                 # Fish shell for interaction ONLY if we are on Linux for now
                 # this is because on Darwin, due to another build error, we cannot use
                 # nixos-unstable, so we need to use an older repo.  However, the version of Fish
