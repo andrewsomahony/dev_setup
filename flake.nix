@@ -18,13 +18,18 @@
       # !!! Why doesn't this work in the forAllSystems loop?
       dev_shell = builtins.getEnv "DEV_SHELL";
       home_directory = builtins.getEnv "HOME";
+
       nvim_config_rev = "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
       fish_config_rev = "080a307470a244733a28d5b5c26f548396841ba2";
+      stablePackagesRequired = false;
     in
       forAllSystems (system: 
         let 
+          # Import our packages with the specific system
           unstablePackages = (import nixpkgs-unstable { inherit system; });
           stablePackages = (import nixpkgs-stable { inherit system; });
+
+          # We use this one for claude-code
           mainPackages = (import nixpkgs { 
             inherit system; 
             config.allowUnfree = true;
@@ -32,7 +37,6 @@
           });
           # We can't call isDarwin until we have an stdenv, which is when we are here,
           # so we set this boolean here
-          stablePackagesRequired = false;
           pkgs = if stablePackagesRequired then stablePackages else unstablePackages;
           python = pkgs.python3;
 
@@ -42,14 +46,8 @@
               src = import ./github.nix {
                 owner = "andrewsomahony";
                 repo = "fish_config";
-                rev = fish_config_rev; #"0a02b8268f01d6b286b647279455dc63f217a0d2";
+                rev = fish_config_rev;
               };
-                # src = pkgs.fetchFromGitHub {
-                #   owner = "andrewsomahony";
-                #   repo = "fish_config";
-                #   rev = "0a02b8268f01d6b286b647279455dc63f217a0d2";
-                #   hash = "sha256-UcBE0YxQgMLnvqbzQ/EthtictmF2TpTOJwIXzUleBaw=";
-                # };
               buildPhase = ''
               '';
               installPhase = ''
@@ -64,12 +62,6 @@
                 repo = "nvim_config";
                 rev = nvim_config_rev;
               };
-              # src = pkgs.fetchFromGitHub {
-              #   owner = "andrewsomahony";
-              #   repo = "nvim_config";
-              #   rev = nvim_config_rev; # "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
-              #   hash = "sha256-ADgJDliysG1qQwhLPo6viPeyHhCaYvM1K/u3ztIqqS0=";
-              # };
               postUnpack = ''
                 # Dynamically generate our NVIM options for Nix
                 
@@ -81,7 +73,6 @@
               buildPhase = ''
               '';
               installPhase = ''
-                # Copy our source root directory, the one with our updates, into the $out directory
                 cp -R . $out
               '';
             };
@@ -192,6 +183,7 @@
                     RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
                   };
                 };
+                # Include our Python packages into our devshell
                 packages = standard_dev_packages 
                               ++ (python.withPackages (project.renderers.withPackages { inherit python; }));
               };
