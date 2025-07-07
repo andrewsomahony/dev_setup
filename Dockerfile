@@ -7,8 +7,7 @@ RUN nix-channel --update
 RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 
 # Copy over our flake.nix file, which we will use to create a devshell
-RUN mkdir /tmp/flake
-COPY flake.nix /tmp/flake
+COPY *.nix /root/
 
 RUN git config --global user.name "Andrew O'Mahony"
 RUN git config --global user.email "andrewsomahony@gmail.com"
@@ -16,7 +15,6 @@ RUN git config --global core.editor nvim
 
 # Set our working directory
 WORKDIR /workspace
-
 
 # Run our Nix develop shell, which serves as the entrypoint
 ENTRYPOINT [ "sleep", "infinity" ]

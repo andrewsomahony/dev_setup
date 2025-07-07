@@ -11,6 +11,8 @@ CURRENT_DIRECTORY=$(pwd)
 # Optional name filter
 NAME_FILTER=$1
 
+# !!! We need to check if Docker is even running, and if not, just quit silently
+
 if [ -z $NAME_FILTER ]; then
   DOCKER_CONTAINER_ID_LIST=$(docker ps -q)
 else

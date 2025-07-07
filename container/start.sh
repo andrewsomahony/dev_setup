@@ -9,7 +9,7 @@ WORKING_DIRECTORY=$(pwd)
 IMAGE_TAG="aom_dev_container"
 NIX_SHELL=/bin/sh
 SHELL=fish
-FLAKE_DIRECTORY=/tmp/flake
+FLAKE_DIRECTORY=/root/
 
 # See if we have a container running in this directory already, and error out if so
 
@@ -34,6 +34,7 @@ CONTAINER_NAME=${IMAGE_TAG}_${UNIQUE_ID}
 # when "nix develop" is finished.
 docker run -d \
           --name $CONTAINER_NAME \
+          --privileged \
           --network host \
           -e DEV_SHELL=$SHELL \
           --mount type=bind,src=$HOME/.ssh_dev,dst=/root/.ssh \

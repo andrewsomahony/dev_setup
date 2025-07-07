@@ -40,8 +40,8 @@
               src = pkgs.fetchFromGitHub {
                 owner = "andrewsomahony";
                 repo = "fish_config";
-                rev = "b4c0c99ad0e42c5b8543b4bd0f370b6a3113ca04";
-                hash = "sha256-5eWZpA3v/vUEdNfVqDNeEQ12UEZIRj9Fg7oTTgcMD3M=";
+                rev = "0a02b8268f01d6b286b647279455dc63f217a0d2";
+                hash = "sha256-UcBE0YxQgMLnvqbzQ/EthtictmF2TpTOJwIXzUleBaw=";
               };
               buildPhase = ''
               '';
@@ -94,30 +94,38 @@
         {
           devShells.default = mkShell {
             DEV_SHELL = dev_shell;
-            shellHook = ''
-              # Set our configuration home directory to our custom Nix directory 
-              # We have to do this after we install Cachix, as Cachix has to write to its
-              # config directory, so we put it in the Nix profile
-
-              # The Fish shell doesn't check the XDG config dirs directory, so we need
-              # to set the HOME directory so it uses our custom config
-              export XDG_CONFIG_HOME="${custom_config}"
-
-              # Nix will check this environment variable, so we need to set it.
-              # As long as our XDG_CONFIG_HOME directory doesn't have a nix/nix.conf
-              # within it, we are safe to use both variables.
-              export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
-
-              # Export our dev shell
-              export DEV_SHELL=$DEV_SHELL
-
-              # We need to export our Rust src path manually, as when we install
-              # the lib src, it isn't done for us for some reason
-              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
-
-              # Execute our dev shell
-              exec $DEV_SHELL
-            '';
+            shellHook = import ./shell_hook.nix { 
+              lib = pkgs.lib; 
+              custom_config = custom_config; 
+              home_directory = home_directory;
+              extra_environment_variables = {
+                RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
+              };
+            };
+            #             shellHook = ''
+            #               # Set our configuration home directory to our custom Nix directory 
+            #               # We have to do this after we install Cachix, as Cachix has to write to its
+            #               # config directory, so we put it in the Nix profile
+            # 
+            #               # The Fish shell doesn't check the XDG config dirs directory, so we need
+            #               # to set the HOME directory so it uses our custom config
+            #               export XDG_CONFIG_HOME="${custom_config}"
+            # 
+            #               # Nix will check this environment variable, so we need to set it.
+            #               # As long as our XDG_CONFIG_HOME directory doesn't have a nix/nix.conf
+            #               # within it, we are safe to use both variables.
+            #               export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
+            # 
+            #               # Export our dev shell
+            #               export DEV_SHELL=$DEV_SHELL
+            # 
+            #               # We need to export our Rust src path manually, as when we install
+            #               # the lib src, it isn't done for us for some reason
+            #               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
+            # 
+            #               # Execute our dev shell
+            #               exec $DEV_SHELL
+            #             '';
             packages = [
                 # Ripgrep for Neovim searching
                 ripgrep
@@ -173,29 +181,6 @@
                 # in this repo isn't very good, so we just use our local OSX fish shell.
             ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ];
 
-          };
-
-          devShells.rust = mkShell {
-            shellHook = "exec fish";
-            packages = [
-              # Rust compiler
-              rustc
-              # Rust package manager
-              cargo
-              # Rust LSP
-              rust-analyzer
-              # vscode-lldb for Neotest debugging of Rust
-              vscode-extensions.vadimcn.vscode-lldb
-            ];
-          };
-
-          # Our Go devshell
-          devShells.go = mkShell {
-            shellHook = "exec fish";
-            packages = [
-              go
-              gopls
-            ];
           };
 
           # Our Python3 development shell
