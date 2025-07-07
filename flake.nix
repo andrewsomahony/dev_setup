@@ -144,9 +144,9 @@
              # in this repo isn't very good, so we just use our local OSX fish shell.
           ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ]);
         in
-        with pkgs;
         {
           devShells.default = import ./new_shell.nix {
+            pkgs = pkgs;
             shell_hook = import ./shell_hook.nix { 
               lib = pkgs.lib; 
               custom_config = custom_config; 
@@ -158,86 +158,30 @@
             };
             packages = standard_dev_packages;
           };
-          # devShells.default = mkShell {
-          #   shellHook = import ./shell_hook.nix { 
-          #     lib = pkgs.lib; 
-          #     custom_config = custom_config; 
-          #     home_directory = home_directory;
-          #     shell = dev_shell;
-          #     extra_environment_variables = {
-          #       RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
-          #     };
-          #   };
-          #   packages = standard_dev_packages;
-      #             packages = [
-      #                 # Ripgrep for Neovim searching
-      #                 ripgrep
-      #                 # Nodejs for various LSP needs
-      #                 nodejs
-      #                 # Python for Neovim and other execution
-      #                 python 
-      #                 # Lua LSP
-      #                 lua-language-server 
-      #                 # Nix LSP
-      #                 nixd 
-      #                 # Clangd LSP
-      #                 clang-tools 
-      #                 # Pyright LSP
-      #                 pyright 
-      #                 # Golang
-      #                 go
-      #                 # Go LSP
-      #                 gopls
-      #                 # Rust compiler
-      #                 rustc
-      #                 # Rust package manager
-      #                 cargo
-      #                 # Next generation Rust unit tester
-      #                 cargo-nextest
-      #                 # Rust LSP
-      #                 rust-analyzer
-      #                 # Rust sources
-      #                 rustPlatform.rustcSrc
-      #                 rustPlatform.rustLibSrc
-      #                 # Docker LSP
-      #                 dockerfile-language-server-nodejs
-      #                 # Fish Shell LSP
-      #                 fish-lsp
-      #                 # Bash LSP
-      #                 bash-language-server
-      #                 # Rust debugger extension
-      #                 vscode-extensions.vadimcn.vscode-lldb
-      #                 # ASM LSP
-      #                 asm-lsp
-      #                 # Clang for Treesitter compilation when installing
-      #                 llvmPackages_latest.clang
-      #                 # LLVM's libcxx
-      #                 llvmPackages_latest.libcxx
-      #                 # LLVM's linker
-      #                 llvmPackages_latest.lld
-      #                 # Nom for building, with a much nicer output
-      #                 nix-output-monitor
-      #                 mainPackages.claude-code
-      #                 # Fish shell for interaction ONLY if we are on Linux for now
-      #                 # this is because on Darwin, due to another build error, we cannot use
-      #                 # nixos-unstable, so we need to use an older repo.  However, the version of Fish
-      #                 # in this repo isn't very good, so we just use our local OSX fish shell.
-      #             ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ];
-          # };
 
           # Our Python3 development shell
+          # We need a special one here because we can use all our standard packages,
+          # but we also need the Python project-specific packages, which we can parse
+          # from the pyproject file (pyproject.toml/requirements.txt/etc) in the current
+          # directory
           devShells.python =
             let
               # Parse our pyproject.toml file in our directory
               project = pyproject-nix.lib.project.loadPyproject { projectRoot = ./.; };
             in 
-              mkShell {
-                shellHook = "exec fish";
-                packages = [
-                 # Set our packages to what our project interprets from its parsed list of dependencies,
-                 # which make them compatible with the standard Python packages
-                 (python.withPackages (project.renderers.withPackages { inherit python; }))
-                ];
+              import ./new_shell.nix {
+                pkgs = pkgs;
+                shell_hook = import ./shell_hook.nix { 
+                  lib = pkgs.lib; 
+                  custom_config = custom_config; 
+                  home_directory = home_directory;
+                  shell = dev_shell;
+                  extra_environment_variables = {
+                    RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
+                  };
+                };
+                packages = standard_dev_packages 
+                              ++ (python.withPackages (project.renderers.withPackages { inherit python; }));
               };
         }
       );
