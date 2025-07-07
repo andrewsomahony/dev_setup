@@ -18,6 +18,8 @@
       # !!! Why doesn't this work in the forAllSystems loop?
       dev_shell = builtins.getEnv "DEV_SHELL";
       home_directory = builtins.getEnv "HOME";
+      nvim_config_rev = "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
+      fish_config_rev = "080a307470a244733a28d5b5c26f548396841ba2";
     in
       forAllSystems (system: 
         let 
@@ -37,12 +39,17 @@
           aom_fish = 
             pkgs.stdenv.mkDerivation {
               name = "aom_fish";
-              src = pkgs.fetchFromGitHub {
+              src = import ./github.nix {
                 owner = "andrewsomahony";
                 repo = "fish_config";
-                rev = "0a02b8268f01d6b286b647279455dc63f217a0d2";
-                hash = "sha256-UcBE0YxQgMLnvqbzQ/EthtictmF2TpTOJwIXzUleBaw=";
+                rev = fish_config_rev; #"0a02b8268f01d6b286b647279455dc63f217a0d2";
               };
+                # src = pkgs.fetchFromGitHub {
+                #   owner = "andrewsomahony";
+                #   repo = "fish_config";
+                #   rev = "0a02b8268f01d6b286b647279455dc63f217a0d2";
+                #   hash = "sha256-UcBE0YxQgMLnvqbzQ/EthtictmF2TpTOJwIXzUleBaw=";
+                # };
               buildPhase = ''
               '';
               installPhase = ''
@@ -52,12 +59,17 @@
           aom_nvim = 
             pkgs.stdenv.mkDerivation {
               name = "aom_nvim";
-              src = pkgs.fetchFromGitHub {
+              src = import ./github.nix {
                 owner = "andrewsomahony";
                 repo = "nvim_config";
-                rev = "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
-                hash = "sha256-ADgJDliysG1qQwhLPo6viPeyHhCaYvM1K/u3ztIqqS0=";
+                rev = nvim_config_rev;
               };
+              # src = pkgs.fetchFromGitHub {
+              #   owner = "andrewsomahony";
+              #   repo = "nvim_config";
+              #   rev = nvim_config_rev; # "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
+              #   hash = "sha256-ADgJDliysG1qQwhLPo6viPeyHhCaYvM1K/u3ztIqqS0=";
+              # };
               postUnpack = ''
                 # Dynamically generate our NVIM options for Nix
                 
