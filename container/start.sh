@@ -8,7 +8,7 @@ WORKING_DIRECTORY=$(pwd)
 
 IMAGE_TAG="aom_dev_container"
 NIX_SHELL=/bin/sh
-SHELL=fish
+SHELL=${DEV_SHELL:-$NIX_SHELL}
 FLAKE_DIRECTORY=/root/
 
 # See if we have a container running in this directory already, and error out if so
@@ -42,4 +42,4 @@ docker run -d \
           $IMAGE_TAG
 
 # Execute our shell
-docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY"
+docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --command $SHELL"

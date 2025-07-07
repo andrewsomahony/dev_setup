@@ -21,11 +21,8 @@ in
     export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
 
     # Export our dev shell
-    export DEV_SHELL=${shell} #$DEV_SHELL
+    export DEV_SHELL=${shell}
 
     # Print out our environment variable exports
     ${environment_variable_exports}
-
-    # Execute our dev shell
-    exec $DEV_SHELL
   ''
