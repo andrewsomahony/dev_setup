@@ -89,99 +89,141 @@
                 cp -R ${aom_fish}/. $out/fish
               '';
             };
-        in 
-        with pkgs; 
+          standard_dev_packages = ( with pkgs; [
+             # Ripgrep for Neovim searching
+             ripgrep
+             # Nodejs for various LSP needs
+             nodejs
+             # Python for Neovim and other execution
+             python 
+             # Lua LSP
+             lua-language-server 
+             # Nix LSP
+             nixd 
+             # Clangd LSP
+             clang-tools 
+             # Pyright LSP
+             pyright 
+             # Golang
+             go
+             # Go LSP
+             gopls
+             # Rust compiler
+             rustc
+             # Rust package manager
+             cargo
+             # Next generation Rust unit tester
+             cargo-nextest
+             # Rust LSP
+             rust-analyzer
+             # Rust sources
+             rustPlatform.rustcSrc
+             rustPlatform.rustLibSrc
+             # Docker LSP
+             dockerfile-language-server-nodejs
+             # Fish Shell LSP
+             fish-lsp
+             # Bash LSP
+             bash-language-server
+             # Rust debugger extension
+             vscode-extensions.vadimcn.vscode-lldb
+             # ASM LSP
+             asm-lsp
+             # Clang for Treesitter compilation when installing
+             llvmPackages_latest.clang
+             # LLVM's libcxx
+             llvmPackages_latest.libcxx
+             # LLVM's linker
+             llvmPackages_latest.lld
+             # Nom for building, with a much nicer output
+             nix-output-monitor
+             mainPackages.claude-code
+             # Fish shell for interaction ONLY if we are on Linux for now
+             # this is because on Darwin, due to another build error, we cannot use
+             # nixos-unstable, so we need to use an older repo.  However, the version of Fish
+             # in this repo isn't very good, so we just use our local OSX fish shell.
+          ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ]);
+        in
+        with pkgs;
         {
-          devShells.default = mkShell {
-            DEV_SHELL = dev_shell;
-            shellHook = import ./shell_hook.nix { 
+          devShells.default = import ./new_shell.nix {
+            shell_hook = import ./shell_hook.nix { 
               lib = pkgs.lib; 
               custom_config = custom_config; 
               home_directory = home_directory;
+              shell = dev_shell;
               extra_environment_variables = {
                 RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
               };
             };
-            #             shellHook = ''
-            #               # Set our configuration home directory to our custom Nix directory 
-            #               # We have to do this after we install Cachix, as Cachix has to write to its
-            #               # config directory, so we put it in the Nix profile
-            # 
-            #               # The Fish shell doesn't check the XDG config dirs directory, so we need
-            #               # to set the HOME directory so it uses our custom config
-            #               export XDG_CONFIG_HOME="${custom_config}"
-            # 
-            #               # Nix will check this environment variable, so we need to set it.
-            #               # As long as our XDG_CONFIG_HOME directory doesn't have a nix/nix.conf
-            #               # within it, we are safe to use both variables.
-            #               export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
-            # 
-            #               # Export our dev shell
-            #               export DEV_SHELL=$DEV_SHELL
-            # 
-            #               # We need to export our Rust src path manually, as when we install
-            #               # the lib src, it isn't done for us for some reason
-            #               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
-            # 
-            #               # Execute our dev shell
-            #               exec $DEV_SHELL
-            #             '';
-            packages = [
-                # Ripgrep for Neovim searching
-                ripgrep
-                # Nodejs for various LSP needs
-                nodejs
-                # Python for Neovim and other execution
-                python 
-                # Lua LSP
-                lua-language-server 
-                # Nix LSP
-                nixd 
-                # Clangd LSP
-                clang-tools 
-                # Pyright LSP
-                pyright 
-                # Golang
-                go
-                # Go LSP
-                gopls
-                # Rust compiler
-                rustc
-                # Rust package manager
-                cargo
-                # Next generation Rust unit tester
-                cargo-nextest
-                # Rust LSP
-                rust-analyzer
-                # Rust sources
-                rustPlatform.rustcSrc
-                rustPlatform.rustLibSrc
-                # Docker LSP
-                dockerfile-language-server-nodejs
-                # Fish Shell LSP
-                fish-lsp
-                # Bash LSP
-                bash-language-server
-                # Rust debugger extension
-                vscode-extensions.vadimcn.vscode-lldb
-                # ASM LSP
-                asm-lsp
-                # Clang for Treesitter compilation when installing
-                llvmPackages_latest.clang
-                # LLVM's libcxx
-                llvmPackages_latest.libcxx
-                # LLVM's linker
-                llvmPackages_latest.lld
-                # Nom for building, with a much nicer output
-                nix-output-monitor
-                mainPackages.claude-code
-                # Fish shell for interaction ONLY if we are on Linux for now
-                # this is because on Darwin, due to another build error, we cannot use
-                # nixos-unstable, so we need to use an older repo.  However, the version of Fish
-                # in this repo isn't very good, so we just use our local OSX fish shell.
-            ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ];
-
+            packages = standard_dev_packages;
           };
+          # devShells.default = mkShell {
+          #   shellHook = import ./shell_hook.nix { 
+          #     lib = pkgs.lib; 
+          #     custom_config = custom_config; 
+          #     home_directory = home_directory;
+          #     shell = dev_shell;
+          #     extra_environment_variables = {
+          #       RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
+          #     };
+          #   };
+          #   packages = standard_dev_packages;
+      #             packages = [
+      #                 # Ripgrep for Neovim searching
+      #                 ripgrep
+      #                 # Nodejs for various LSP needs
+      #                 nodejs
+      #                 # Python for Neovim and other execution
+      #                 python 
+      #                 # Lua LSP
+      #                 lua-language-server 
+      #                 # Nix LSP
+      #                 nixd 
+      #                 # Clangd LSP
+      #                 clang-tools 
+      #                 # Pyright LSP
+      #                 pyright 
+      #                 # Golang
+      #                 go
+      #                 # Go LSP
+      #                 gopls
+      #                 # Rust compiler
+      #                 rustc
+      #                 # Rust package manager
+      #                 cargo
+      #                 # Next generation Rust unit tester
+      #                 cargo-nextest
+      #                 # Rust LSP
+      #                 rust-analyzer
+      #                 # Rust sources
+      #                 rustPlatform.rustcSrc
+      #                 rustPlatform.rustLibSrc
+      #                 # Docker LSP
+      #                 dockerfile-language-server-nodejs
+      #                 # Fish Shell LSP
+      #                 fish-lsp
+      #                 # Bash LSP
+      #                 bash-language-server
+      #                 # Rust debugger extension
+      #                 vscode-extensions.vadimcn.vscode-lldb
+      #                 # ASM LSP
+      #                 asm-lsp
+      #                 # Clang for Treesitter compilation when installing
+      #                 llvmPackages_latest.clang
+      #                 # LLVM's libcxx
+      #                 llvmPackages_latest.libcxx
+      #                 # LLVM's linker
+      #                 llvmPackages_latest.lld
+      #                 # Nom for building, with a much nicer output
+      #                 nix-output-monitor
+      #                 mainPackages.claude-code
+      #                 # Fish shell for interaction ONLY if we are on Linux for now
+      #                 # this is because on Darwin, due to another build error, we cannot use
+      #                 # nixos-unstable, so we need to use an older repo.  However, the version of Fish
+      #                 # in this repo isn't very good, so we just use our local OSX fish shell.
+      #             ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ];
+          # };
 
           # Our Python3 development shell
           devShells.python =

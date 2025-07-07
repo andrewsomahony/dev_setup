@@ -1,10 +1,10 @@
 # Returns a shell hook given the input variables, including the extra environment variables
 # to be exported
-{lib, custom_config, home_directory, extra_environment_variables}:
+{lib, custom_config, home_directory, shell, extra_environment_variables}:
 let
-  environment_variable_exports = lib.attrsets.mapAttrs (name: value: 
+  environment_variable_exports = lib.strings.concatLines (lib.attrsets.mapAttrsToList (name: value: 
     "export ${name}=${value}"
-  ) extra_environment_variables;
+  ) extra_environment_variables);
 in 
   ''
     # Set our configuration home directory to our custom Nix directory 
@@ -21,7 +21,7 @@ in
     export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
 
     # Export our dev shell
-    export DEV_SHELL=$DEV_SHELL
+    export DEV_SHELL=${shell} #$DEV_SHELL
 
     # Print out our environment variable exports
     ${environment_variable_exports}
