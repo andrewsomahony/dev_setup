@@ -93,6 +93,13 @@
               '';
             };
           standard_dev_packages = ( with pkgs; [
+             # Useful for monitoring progress of operations like dd
+             pv
+             # Useful for searching for files
+             tree
+             # So I don't have to keep installing "mount" and "fdisk" and such
+             # into my local profile :D
+             util-linux
              # Ripgrep for Neovim searching
              ripgrep
              # Nodejs for various LSP needs

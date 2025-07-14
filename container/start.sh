@@ -11,11 +11,12 @@ NIX_SHELL=/bin/sh
 SHELL=${DEV_SHELL:-$NIX_SHELL}
 FLAKE_DIRECTORY=/root/
 
-# See if we have a container running in this directory already, and error out if so
+# See if we have a container running in this directory already
 
 EXISTING_CONTAINER_ID=$($SCRIPT_DIRECTORY/detect.sh)
 if [ -n "$EXISTING_CONTAINER_ID" ]; then
-  docker exec -it $EXISTING_CONTAINER_ID $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY"
+  # We can just execute our shell on the existing container to get a new shell in the container
+  docker exec -it $EXISTING_CONTAINER_ID $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --command $SHELL"
   exit 0
 fi
 
