@@ -92,7 +92,9 @@
                 cp -R ${aom_fish}/. $out/fish
               '';
             };
+          mount_package = import ./mount.nix { inherit pkgs; };
           standard_dev_packages = ( with pkgs; [
+             mount_package
              # Useful for monitoring progress of operations like dd
              pv
              # Useful for searching for files
