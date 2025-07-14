@@ -1,6 +1,5 @@
 { pkgs }:
-let
-  shell_script = pkgs.writeShellScriptBin "image-mounter" ''
+pkgs.writeShellScriptBin "image-mounter" ''
     # Utility script to mount the main FS of the image so we don't have to constantly figure out
     # what offset we need to use and such
     
@@ -81,14 +80,4 @@ let
     # Now we can chroot into our mount point and start BASH,
     # and our root directory will effectively be in the image
     chroot $MOUNT_POINT bash
-  '';
-in
-  # Make a derivation to symbolic link our shell script so we can access it easier
-  pkgs.stdenv.mkDerivation {
-    name = "image-mounter-symlink";
-    
-    buildCommand = ''
-      mkdir -p $out
-      ln -s ${shell_script}/bin/image-mounter $out/image-mounter
-    '';
-  }
+  ''

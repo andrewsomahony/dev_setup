@@ -92,9 +92,25 @@
                 cp -R ${aom_fish}/. $out/fish
               '';
             };
-          mount_package = import ./mount.nix { inherit pkgs; };
+
+          # Packages that we override the system-wide versions.  We do this if there are issues
+          # with the Nix version of a package, so the optionals allows us to skip installing it 
+          # if needed.
+
+          # Fish shell for interaction ONLY if we are on Linux for now
+          # this is because on Darwin, due to another build error, we cannot use
+          # nixos-unstable, so we need to use an older repo.  However, the version of Fish
+          # in this repo isn't very good, so we just use our local OSX fish shell.
+          override_system_packages = pkgs.lib.optionals (!stablePackagesRequired) ( with pkgs; [ fish neovim ]);
+
+          # Linux-specific packages
+          linux_packages = pkgs.lib.optionals pkgs.stdenv.isLinux [
+            # This package only works on Linux as it is using Linux-specific commands
+            # like mount and umount, that are found in the util-linux Nix package
+            (import ./mount.nix { inherit pkgs; })
+          ];
+
           standard_dev_packages = ( with pkgs; [
-             mount_package
              # Useful for monitoring progress of operations like dd
              pv
              # Useful for searching for files
@@ -150,11 +166,7 @@
              # Nom for building, with a much nicer output
              nix-output-monitor
              mainPackages.claude-code
-             # Fish shell for interaction ONLY if we are on Linux for now
-             # this is because on Darwin, due to another build error, we cannot use
-             # nixos-unstable, so we need to use an older repo.  However, the version of Fish
-             # in this repo isn't very good, so we just use our local OSX fish shell.
-          ] ++ lib.optionals (!stablePackagesRequired) [ fish neovim ]);
+          ] ++ linux_packages ++ override_system_packages);
         in
         {
           devShells.default = import ./new_shell.nix {
