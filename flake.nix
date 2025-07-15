@@ -19,7 +19,7 @@
       dev_shell = builtins.getEnv "DEV_SHELL";
       home_directory = builtins.getEnv "HOME";
 
-      nvim_config_rev = "7b51d1e5a03693f4fc42d3fb5cb4ddc8d0d6818c";
+      nvim_config_rev = "8c0e55ca8db9f133133eb984617f2563096b74a8";
       fish_config_rev = "00aabb0ce6c5af8e5025fd07b7f3388f70f350b0";
       stablePackagesRequired = false;
     in
