@@ -42,4 +42,4 @@ docker run -d \
           $IMAGE_TAG
 
 # Execute our shell by executing it as the "nix develop" command
-docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --override-input sourceTree /workspace --command $SHELL"
+docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --command $SHELL"

@@ -11,12 +11,12 @@
   inputs.utils.url = "github:numtide/flake-utils";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
   # So we can access the local tree in our derivations, if needed
-  inputs.sourceTree = {
-    flake = false;
-    url = "path:/dev/null";
-  };
+  #   inputs.sourceTree = {
+  #     flake = false;
+  #     url = "path:/dev/null";
+  #   };
 
-  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils, pyproject-nix, sourceTree }:
+  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils, pyproject-nix }:
     let
       forAllSystems = utils.lib.eachDefaultSystem;
       # Get our homw directory as some of our files are there
@@ -24,7 +24,7 @@
       home_directory = builtins.getEnv "HOME";
 
       nvim_config_rev = "8c0e55ca8db9f133133eb984617f2563096b74a8";
-      fish_config_rev = "68b89541bd70072fd0e1b2cf9edb2c6d7d1d58bc";
+      fish_config_rev = "46586e3d30e708aa73123490fe3434972b5a85b5";
       stablePackagesRequired = false;
     in
       forAllSystems (system: 
@@ -189,54 +189,54 @@
           # but we also need the Python project-specific packages, which we can parse
           # from the pyproject file (pyproject.toml/requirements.txt/etc) in the current
           # directory
-          devShells.python =
-            let
-              # Analyze the source tree using the path
-              projectRoot = sourceTree;
-              requirements = projectRoot + "/requirements.txt";
-              # Set our Python Project
-              pythonProject = (
-                ### !!! Why isn't this already in pyproject-nix??
-                if builtins.pathExists requirements then
-                  pyproject-nix.lib.project.loadRequirementsTxt { inherit projectRoot; }
-                else
-                  pyproject-nix.lib.project.loadPyproject { inherit projectRoot; }
-              );
-            in 
-              import ./new_shell.nix {
-                inherit pkgs;
-                shell_hook = import ./shell_hook.nix { 
-                  inherit pkgs custom_config home_directory;
-                  # Generate a pyrightconfig.json for this environment
-                  shell_code = ''
-                              echo "Setting up development environment..."
-                    
-                              # Generate pyrightconfig.json
-                              cat > pyrightconfig.json << 'EOF'
-              {
-                "include": [
-                  "."
-                ],
-                "exclude": [
-                  "**/__pycache__",
-                  "**/.pytest_cache"
-                ],
-                "reportMissingImports": true,
-                "reportMissingTypeStubs": false
-                "reportOptionalMemberAccess": "none"
-              }
-              EOF
-                    
-                              echo "Generated pyrightconfig.json"
-            '';
-                  extra_environment_variables = {
-                    RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
-                  };
-                };
-                # Include our Python packages into our devshell
-                packages = standard_dev_packages 
-                              ++ [(python.withPackages (pythonProject.renderers.withPackages { inherit python; }))];
-              };
+          #           devShells.python =
+          #             let
+          #               # Analyze the source tree using the path
+          #               projectRoot = sourceTree;
+          #               requirements = projectRoot + "/requirements.txt";
+          #               # Set our Python Project
+          #               pythonProject = (
+          #                 ### !!! Why isn't this already in pyproject-nix??
+          #                 if builtins.pathExists requirements then
+          #                   pyproject-nix.lib.project.loadRequirementsTxt { inherit projectRoot; }
+          #                 else
+          #                   pyproject-nix.lib.project.loadPyproject { inherit projectRoot; }
+          #               );
+          #             in 
+          #               import ./new_shell.nix {
+          #                 inherit pkgs;
+          #                 shell_hook = import ./shell_hook.nix { 
+          #                   inherit pkgs custom_config home_directory;
+          #                   # Generate a pyrightconfig.json for this environment
+          #                   shell_code = ''
+          #                               echo "Setting up development environment..."
+          #                     
+          #                               # Generate pyrightconfig.json
+          #                               cat > pyrightconfig.json << 'EOF'
+          #               {
+          #                 "include": [
+          #                   "."
+          #                 ],
+          #                 "exclude": [
+          #                   "**/__pycache__",
+          #                   "**/.pytest_cache"
+          #                 ],
+          #                 "reportMissingImports": true,
+          #                 "reportMissingTypeStubs": false
+          #                 "reportOptionalMemberAccess": "none"
+          #               }
+          #               EOF
+          #                     
+          #                               echo "Generated pyrightconfig.json"
+          #             '';
+          #                   extra_environment_variables = {
+          #                     RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
+          #                   };
+          #                 };
+          #                 # Include our Python packages into our devshell
+          #                 packages = standard_dev_packages 
+          #                               ++ [(python.withPackages (pythonProject.renderers.withPackages { inherit python; }))];
+          #               };
         }
       );
 }
