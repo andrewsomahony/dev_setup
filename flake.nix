@@ -10,17 +10,21 @@
   };
   inputs.utils.url = "github:numtide/flake-utils";
   inputs.pyproject-nix.url = "github:pyproject-nix/pyproject.nix";
+  # So we can access the local tree in our derivations, if needed
+  inputs.sourceTree = {
+    flake = false;
+    url = "path:/dev/null";
+  };
 
-  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils, pyproject-nix }:
+  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils, pyproject-nix, sourceTree }:
     let
       forAllSystems = utils.lib.eachDefaultSystem;
-      # Get our Dev Shell
+      # Get our homw directory as some of our files are there
       # !!! Why doesn't this work in the forAllSystems loop?
-      dev_shell = builtins.getEnv "DEV_SHELL";
       home_directory = builtins.getEnv "HOME";
 
       nvim_config_rev = "8c0e55ca8db9f133133eb984617f2563096b74a8";
-      fish_config_rev = "00aabb0ce6c5af8e5025fd07b7f3388f70f350b0";
+      fish_config_rev = "64e9a77ab88fb5513756b9ec00c79eadd0775ccd";
       stablePackagesRequired = false;
     in
       forAllSystems (system: 
@@ -170,12 +174,9 @@
         in
         {
           devShells.default = import ./new_shell.nix {
-            pkgs = pkgs;
+            inherit pkgs;
             shell_hook = import ./shell_hook.nix { 
-              lib = pkgs.lib; 
-              custom_config = custom_config; 
-              home_directory = home_directory;
-              shell = dev_shell;
+              inherit pkgs custom_config home_directory;
               extra_environment_variables = {
                 RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
               };
@@ -190,23 +191,51 @@
           # directory
           devShells.python =
             let
-              # Parse our pyproject.toml file in our directory
-              project = pyproject-nix.lib.project.loadPyproject { projectRoot = ./.; };
+              # Analyze the source tree using the path
+              projectRoot = sourceTree;
+              requirements = projectRoot + "/requirements.txt";
+              # Set our Python Project
+              pythonProject = (
+                ### !!! Why isn't this already in pyproject-nix??
+                if builtins.pathExists requirements then
+                  pyproject-nix.lib.project.loadRequirementsTxt { inherit projectRoot; }
+                else
+                  pyproject-nix.lib.project.loadPyproject { inherit projectRoot; }
+              );
             in 
               import ./new_shell.nix {
-                pkgs = pkgs;
+                inherit pkgs;
                 shell_hook = import ./shell_hook.nix { 
-                  lib = pkgs.lib; 
-                  custom_config = custom_config; 
-                  home_directory = home_directory;
-                  shell = dev_shell;
+                  inherit pkgs custom_config home_directory;
+                  # Generate a pyrightconfig.json for this environment
+                  shell_code = ''
+                              echo "Setting up development environment..."
+                    
+                              # Generate pyrightconfig.json
+                              cat > pyrightconfig.json << 'EOF'
+              {
+                "include": [
+                  "."
+                ],
+                "exclude": [
+                  "**/__pycache__",
+                  "**/.pytest_cache"
+                ],
+                "reportMissingImports": true,
+                "reportMissingTypeStubs": false
+                "reportOptionalMemberAccess": "none"
+              }
+              EOF
+                    
+                              echo "Generated pyrightconfig.json"
+            '';
                   extra_environment_variables = {
                     RUST_SRC_PATH="${pkgs.rustPlatform.rustLibSrc}";
                   };
                 };
                 # Include our Python packages into our devshell
                 packages = standard_dev_packages 
-                              ++ (python.withPackages (project.renderers.withPackages { inherit python; }));
+                              ++ [(python.withPackages (pythonProject.renderers.withPackages { inherit python; }))];
               };
         }
       );

@@ -37,10 +37,9 @@ docker run -d \
           --name $CONTAINER_NAME \
           --privileged \
           --network host \
-          -e DEV_SHELL=$SHELL \
           --mount type=bind,src=$HOME/.ssh_dev,dst=/root/.ssh \
           --mount type=bind,src=$WORKING_DIRECTORY,dst=/workspace \
           $IMAGE_TAG
 
-# Execute our shell
-docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --command $SHELL"
+# Execute our shell by executing it as the "nix develop" command
+docker exec -it $CONTAINER_NAME $NIX_SHELL -c "nix develop --impure $FLAKE_DIRECTORY --override-input sourceTree /workspace --command $SHELL"

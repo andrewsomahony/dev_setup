@@ -1,8 +1,8 @@
 # Returns a shell hook given the input variables, including the extra environment variables
 # to be exported
-{lib, custom_config, home_directory, shell, extra_environment_variables}:
+{pkgs, custom_config, home_directory, extra_environment_variables, shell_code ? ''''}:
 let
-  environment_variable_exports = lib.strings.concatLines (lib.attrsets.mapAttrsToList (name: value: 
+  environment_variable_exports = pkgs.lib.strings.concatLines (pkgs.lib.attrsets.mapAttrsToList (name: value: 
     "export ${name}=${value}"
   ) extra_environment_variables);
 in 
@@ -20,9 +20,6 @@ in
     # within it, we are safe to use both variables.
     export XDG_CONFIG_DIRS="${custom_config}:${home_directory}/.config"
 
-    # Export our dev shell
-    export DEV_SHELL=${shell}
-
     # Print out our environment variable exports
     ${environment_variable_exports}
-  ''
+  '' + shell_code
