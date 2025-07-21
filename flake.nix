@@ -115,6 +115,7 @@
           ];
 
           standard_dev_packages = ( with pkgs; [
+             git
              # Useful for monitoring progress of operations like dd
              pv
              # Useful for searching for files
