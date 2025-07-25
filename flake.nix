@@ -108,9 +108,12 @@
             (import ./mount.nix { inherit pkgs; })
           ];
 
+          copy_and_run = import ./copy_and_run.nix { inherit pkgs; };
           standard_dev_packages = ( with pkgs; [
              # So we can copy and run packages with one command
-             (import ./copy_and_run.nix { inherit pkgs; })
+             copy_and_run.ncar
+             # So we can copy and reload OS'es with one command
+             copy_and_run.ncosar
 
              git
              # Useful for monitoring progress of operations like dd
