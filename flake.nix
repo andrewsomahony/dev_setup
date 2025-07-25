@@ -109,6 +109,9 @@
           ];
 
           standard_dev_packages = ( with pkgs; [
+             # So we can copy and run packages with one command
+             (import ./copy_and_run.nix { inherit pkgs; })
+
              git
              # Useful for monitoring progress of operations like dd
              pv
