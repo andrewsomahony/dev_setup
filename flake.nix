@@ -17,7 +17,7 @@
       # !!! Why doesn't this work in the forAllSystems loop?
       home_directory = builtins.getEnv "HOME";
 
-      nvim_config_rev = "8c0e55ca8db9f133133eb984617f2563096b74a8";
+      nvim_config_rev = "015faf0fb57deedeb6bb80d2cc08e4da14efe7b5";
       fish_config_rev = "46586e3d30e708aa73123490fe3434972b5a85b5";
       stablePackagesRequired = false;
     in
@@ -65,8 +65,16 @@
                 
                 # We aren't using Mason
                 echo "return {has_mason = false}" > $sourceRoot/lua/dynamic_options/mason.lua
+
                 # LSP's that we are adding to our navigator plugin
                 echo 'return {"asm_lsp","nixd","bashls","fish_lsp"}' > $sourceRoot/lua/dynamic_options/lsp_servers.lua
+
+                # If we aren't on Linux, then include "not_linux" as a feature for our Rust analyzer LSP, so that
+                # if we have feature-guarded Linux-only libraries, we won't run into any issues
+                SYSTEM_NAME=$(uname)
+                if [ "Linux" != $SYSTEM_NAME ]; then
+                  echo 'return {cargo = {features = {"not_linux"}}}' > $sourceRoot/lua/dynamic_options/rust_analyzer.lua
+                fi
               '';
               buildPhase = ''
               '';
