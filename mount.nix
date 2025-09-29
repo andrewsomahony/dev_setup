@@ -28,14 +28,21 @@ pkgs.writeShellScriptBin "image-mounter" ''
 
     cleanup() {
       if [ -n $MOUNT_POINT ]; then
-        if mountpoint -q "$MOUNT_POINT/nix" ; then
-          $UMOUNT "$MOUNT_POINT/nix"
+        if mountpoint -q "$MOUNT_POINT/tools" ; then
+          $UMOUNT "$MOUNT_POINT/tools"
+          # Remove our tools directory
+          rm -rf $MOUNT_POINT/tools
         fi
         if mountpoint -q "$MOUNT_POINT" ; then
           $UMOUNT $MOUNT_POINT
         fi
         # Remove our mount point
         rm -rf $MOUNT_POINT
+
+        # Remove our chroot-tools temporary directory
+        if mountpoint -q "/tmp/chroot-tools"; then
+          $UMOUNT /tmp/chroot-tools
+        fi
       fi
       $LOSETUP -D
     }
@@ -56,7 +63,7 @@ pkgs.writeShellScriptBin "image-mounter" ''
     if [ -n "$PARTITION_INDEX" ]; then
       SECTOR_SIZE=512
       # Get the offset of our sector
-      SECTOR_OFFSET=$($FDISK -l $IMAGE_NAME | awk "/^\/dev\/loop/ || /^[^ ]*$PARTITION_INDEX[ \t]/ { print \$2; exit }")
+      SECTOR_OFFSET=$($FDISK -l $IMAGE_NAME | awk "match(\$0, /^[^ ]*$PARTITION_INDEX[ \t*]+([0-9]+)/, arr) { print arr[1]; exit }")
       RAW_OFFSET=$((SECTOR_OFFSET * SECTOR_SIZE))
       # Get a loopback device for us to use
       LOOPBACK_DEVICE=$($LOSETUP --find --show --offset $RAW_OFFSET $IMAGE_NAME)
@@ -67,17 +74,23 @@ pkgs.writeShellScriptBin "image-mounter" ''
     fi
     
     MOUNT_POINT=$(mktemp -d)
-    mkdir -p $MOUNT_POINT
-    
+
     # Mount our image
     $MOUNT $LOOPBACK_DEVICE $MOUNT_POINT
-    
-    # Bind-Mount our Nix directory into the image, so we can access all
-    # the required binaries within the chroot
-    mkdir -p $MOUNT_POINT/nix
-    mount --bind /nix "$MOUNT_POINT/nix"
-    
-    # Now we can chroot into our mount point and start BASH,
-    # and our root directory will effectively be in the image
-    chroot $MOUNT_POINT bash
+
+    mkdir -p /tmp/chroot-tools
+    mount -t tmpfs -o size=64M tmpfs /tmp/chroot-tools
+
+    BUILD_DIRECTORY=$(mktemp -d)
+
+    nix build nixpkgs#pkgsStatic.busybox -o $BUILD_DIRECTORY/busybox-static
+    install -D $BUILD_DIRECTORY/busybox-static/bin/busybox /tmp/chroot-tools/busybox
+    ( cd /tmp/chroot-tools && ./busybox --install . )
+
+    mkdir -p $MOUNT_POINT/tools
+    mount --bind /tmp/chroot-tools "$MOUNT_POINT/tools"
+
+    CHROOT_FULL_PATH=$(which chroot)
+
+    PATH=/tools $CHROOT_FULL_PATH "$MOUNT_POINT" /tools/sh
   ''

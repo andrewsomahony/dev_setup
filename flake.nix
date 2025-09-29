@@ -26,6 +26,10 @@
           # Import our packages with the specific system
           unstablePackages = (import nixpkgs-unstable { inherit system; });
           stablePackages = (import nixpkgs-stable { inherit system; });
+          staticPackages = import nixpkgs-unstable {
+            inherit system; 
+            overlays = [(final: prev: { inherit (prev.pkgsStatic) bash; })];
+          };
 
           # We use this one for claude-code
           mainPackages = (import nixpkgs { 
@@ -36,6 +40,7 @@
           # We can't call isDarwin until we have an stdenv, which is when we are here,
           # so we set this boolean here
           pkgs = if stablePackagesRequired then stablePackages else unstablePackages;
+          pkgsStatic = staticPackages;
           python = pkgs.python3;
 
           aom_fish = 
@@ -71,10 +76,12 @@
 
                 # If we aren't on Linux, then include "not_linux" as a feature for our Rust analyzer LSP, so that
                 # if we have feature-guarded Linux-only libraries, we won't run into any issues
-                SYSTEM_NAME=$(uname)
-                if [ "Linux" != $SYSTEM_NAME ]; then
-                  echo 'return {cargo = {features = {"not_linux"}}}' > $sourceRoot/lua/dynamic_options/rust_analyzer.lua
-                fi
+                # !!! Disabled as rust-analyzer fails if nothing in the workspace has this feature, which is
+                # !!! idiotic
+                # SYSTEM_NAME=$(uname)
+                # if [ "Linux" != $SYSTEM_NAME ]; then
+                  # echo 'return {cargo = {noDefaultFeatures = false, allFeatures = false, features = {"not_linux"}}}' > $sourceRoot/lua/dynamic_options/rust_analyzer.lua
+                # fi
               '';
               buildPhase = ''
               '';
