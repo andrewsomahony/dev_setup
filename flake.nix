@@ -5,90 +5,85 @@
   inputs.nixpkgs-stable = {
     url = "github:NixOS/nixpkgs/nixos-24.11"; # Example branch for macOS
   };
+  inputs.nixpkgs-new = {
+    url = "github:NixOS/nixpkgs/nixos-26.05"; # Example branch for macOS
+  };
   inputs.nixpkgs = {
     url = "github:NixOS/nixpkgs";
   };
+  inputs.neovim-nixpkgs = {
+    url = "github:NixOS/nixpkgs/7e495b747b51f95ae15e74377c5ce1fe69c1765f";
+  };
   inputs.utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, utils }:
+  outputs = { self, nixpkgs-unstable, nixpkgs-stable, nixpkgs, nixpkgs-new, neovim-nixpkgs, utils }:
     let
       forAllSystems = utils.lib.eachDefaultSystem;
       # Get our homw directory as some of our files are there
       # !!! Why doesn't this work in the forAllSystems loop?
       home_directory = builtins.getEnv "HOME";
 
-      nvim_config_rev = "015faf0fb57deedeb6bb80d2cc08e4da14efe7b5";
-      fish_config_rev = "46586e3d30e708aa73123490fe3434972b5a85b5";
-      stablePackagesRequired = false;
+      # nvim_config_rev = "015faf0fb57deedeb6bb80d2cc08e4da14efe7b5";
+      # fish_config_rev = "46586e3d30e708aa73123490fe3434972b5a85b5";
+      # stablePackagesRequired = false;
     in
       forAllSystems (system: 
         let 
           # Import our packages with the specific system
-          unstablePackages = (import nixpkgs-unstable { inherit system; });
+          unstablePackages = (import nixpkgs-unstable { inherit system; config.allowUnfree = true; });
           stablePackages = (import nixpkgs-stable { inherit system; });
-          staticPackages = import nixpkgs-unstable {
-            inherit system; 
-            overlays = [(final: prev: { inherit (prev.pkgsStatic) bash; })];
-          };
+	  neovimPackages = (import neovim-nixpkgs { inherit system; });
 
           # We use this one for claude-code
-          mainPackages = (import nixpkgs { 
+          mainPackages = (import nixpkgs-new { 
             inherit system; 
             config.allowUnfree = true;
             sandbox = false;
           });
           # We can't call isDarwin until we have an stdenv, which is when we are here,
           # so we set this boolean here
-          pkgs = if stablePackagesRequired then stablePackages else unstablePackages;
-          pkgsStatic = staticPackages;
+          pkgs = unstablePackages;
           python = pkgs.python3;
 
-          aom_fish = 
-            pkgs.stdenv.mkDerivation {
-              name = "aom_fish";
-              src = import ./github.nix {
-                owner = "andrewsomahony";
-                repo = "fish_config";
-                rev = fish_config_rev;
-              };
-              buildPhase = ''
-              '';
-              installPhase = ''
-                cp -R . $out
-              '';
-            };
-          aom_nvim = 
-            pkgs.stdenv.mkDerivation {
-              name = "aom_nvim";
-              src = import ./github.nix {
-                owner = "andrewsomahony";
-                repo = "nvim_config";
-                rev = nvim_config_rev;
-              };
-              postUnpack = ''
-                # Dynamically generate our NVIM options for Nix
-                
-                # We aren't using Mason
-                echo "return {has_mason = false}" > $sourceRoot/lua/dynamic_options/mason.lua
+          # aom_fish = 
+          #   pkgs.stdenv.mkDerivation {
+          #     name = "aom_fish";
+          #     src = import ./github.nix {
+          #       owner = "andrewsomahony";
+          #       repo = "fish_config";
+          #       rev = fish_config_rev;
+          #     };
+          #     buildPhase = ''
+          #     '';
+          #     installPhase = ''
+          #       cp -R . $out
+          #     '';
+          #   };
+          # aom_nvim = 
+          #   pkgs.stdenv.mkDerivation {
+          #     name = "aom_nvim";
+          #     src = import ./github.nix {
+          #       owner = "andrewsomahony";
+          #       repo = "nvim_config";
+          #       rev = nvim_config_rev;
+          #     };
+          #     postUnpack = ''
+          #       # Dynamically generate our NVIM options for Nix
+          #       
+          #       # We aren't using Mason
+          #       echo "return {has_mason = false}" > $sourceRoot/lua/dynamic_options/mason.lua
 
-                # LSP's that we are adding to our navigator plugin
-                echo 'return {"asm_lsp","nixd","bashls","fish_lsp"}' > $sourceRoot/lua/dynamic_options/lsp_servers.lua
+          #       # LSP's that we are adding to our navigator plugin
+          #       echo 'return {"asm_lsp","nixd","bashls","fish_lsp"}' > $sourceRoot/lua/dynamic_options/lsp_servers.lua
 
-                # If we aren't on Linux, then include "not_linux" as a feature for our Rust analyzer LSP, so that
-                # if we have feature-guarded Linux-only libraries, we won't run into any issues
-                # !!! Disabled as rust-analyzer fails if nothing in the workspace has this feature, which is
-                # !!! idiotic
-                # SYSTEM_NAME=$(uname)
-                # if [ "Linux" != $SYSTEM_NAME ]; then
-                  # echo 'return {cargo = {noDefaultFeatures = false, allFeatures = false, features = {"not_linux"}}}' > $sourceRoot/lua/dynamic_options/rust_analyzer.lua
-                # fi
-              '';
-              buildPhase = ''
-              '';
-              installPhase = ''
-                cp -R . $out
-              '';
-            };
+          #       # echo 'return {procMacro = {enable = false},}' > $sourceRoot/lua/dynamic_options/rust_analyzer.lua
+          #     '';
+          #     buildPhase = ''
+          #     '';
+          #     installPhase = ''
+          #       cp -R . $out
+          #     '';
+          #   };
           # Make a derivation just to store our custom configuration, which
           # we will set our XDG_CONFIG_HOME environment variable to
           custom_config = 
@@ -99,10 +94,7 @@
               buildPhase = ''
               '';
               installPhase = ''
-                mkdir -p $out/nvim
-                mkdir -p $out/fish
-                cp -R ${aom_nvim}/. $out/nvim
-                cp -R ${aom_fish}/. $out/fish
+                mkdir -p $out
               '';
             };
 
@@ -114,7 +106,7 @@
           # this is because on Darwin, due to another build error, we cannot use
           # nixos-unstable, so we need to use an older repo.  However, the version of Fish
           # in this repo isn't very good, so we just use our local OSX fish shell.
-          override_system_packages = pkgs.lib.optionals (!stablePackagesRequired) ( with pkgs; [ fish neovim ]);
+          # override_system_packages = pkgs.lib.optionals (!stablePackagesRequired) ( with pkgs; [ neovim ]);
 
           # Linux-specific packages
           linux_packages = pkgs.lib.optionals pkgs.stdenv.isLinux [
@@ -129,7 +121,6 @@
              copy_and_run.ncar
              # So we can copy and reload OS'es with one command
              copy_and_run.ncosar
-
              git
              # Useful for monitoring progress of operations like dd
              pv
@@ -158,12 +149,12 @@
              gopls
              # Rust compiler
              rustc
+             # Rust LSP
+             rust-analyzer
              # Rust package manager
              cargo
              # Next generation Rust unit tester
              cargo-nextest
-             # Rust LSP
-             rust-analyzer
              # Rust sources
              rustPlatform.rustcSrc
              rustPlatform.rustLibSrc
@@ -185,8 +176,9 @@
              llvmPackages_latest.lld
              # Nom for building, with a much nicer output
              nix-output-monitor
-             mainPackages.claude-code
-          ] ++ linux_packages ++ override_system_packages);
+             unstablePackages.claude-code
+	           neovimPackages.neovim
+          ] ++ linux_packages);
         in
         {
           devShells.default = import ./new_shell.nix {

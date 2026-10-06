@@ -13,7 +13,7 @@ in
 
     # The Fish shell doesn't check the XDG config dirs directory, so we need
     # to set the HOME directory so it uses our custom config
-    export XDG_CONFIG_HOME="${custom_config}"
+    # export XDG_CONFIG_HOME="${custom_config}"
 
     # Nix will check this environment variable, so we need to set it.
     # As long as our XDG_CONFIG_HOME directory doesn't have a nix/nix.conf
